@@ -3,16 +3,26 @@ import {Input} from "@/components/ui/input";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
-    DropdownMenuContent,
+    DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
-import {ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Columns2} from "lucide-react";
+import {
+    ArrowDown, ArrowRightCircle,
+    ArrowUp, Ban, CheckCircle,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    ChevronsUpDown, CircleEqual, Clock,
+    Columns2, EyeOff, MoreHorizontal, RefreshCw, TimerIcon, XCircle
+} from "lucide-react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {
+    ColumnDef,
     ColumnFiltersState,
     flexRender,
-    getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel,
+    getCoreRowModel, getFilteredRowModel, getSortedRowModel,
     SortingState,
     useReactTable,
     VisibilityState
@@ -25,34 +35,232 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {getColumns} from "@/Pages/Partials/WelcomeColumns";
+import {Checkbox} from "@/components/ui/checkbox";
+import {router} from "@inertiajs/react";
+import {Payment} from "@/Pages/Welcome";
 
 function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
-    const [dataUser, setDataUser] = React.useState(data.data);
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
     const [rowsPerPage, setRowsPerPage] = React.useState(15);
     const [pageIndex, setPageIndex] = React.useState(0);
+    const [search, setSearch] = React.useState("");
+    const [sort, setSort] = React.useState("");
+    const [previousValues, setPreviousValues] = React.useState({});
 
     React.useEffect(() => {
-        fetchData(rowsPerPage, pageIndex);
-    }, [rowsPerPage, pageIndex]);
+        const timer = setTimeout(() => {
+            fetchData();
+        }, 700);
 
-    const fetchData = (rowsPerPage: number, pageIndex: number) => {
-        fetch(`/api/users?page=${pageIndex + 1}&perPage=${rowsPerPage}`)
-            .then(response => response.json())
-            .then(fetchedData => {
-                setDataUser(fetchedData.data);
-            })
-            .catch(error => {
-                console.error("Error fetching data", error);
-            });
+        return () => clearTimeout(timer);
+    }, [rowsPerPage, pageIndex, search, sort]);
+
+
+    const generateColumns = (data: any) => {
+        const keys = Object.keys(data[0]);
+
+        const columns: (null | {
+            accessorKey: string;
+            header: ({column}: { column: any }) => React.JSX.Element;
+            cell: ({row}: { row: any }) => any;
+        })[] = keys.map((key: string) => {
+            if (key === "id") return null;
+
+            return {
+                accessorKey: key,
+                header: ({column}: { column: any }) => (
+                    <div className={'flex justify-center'}>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <div className={'w-8'}>
+                                    <Button variant="ghost"
+                                            className="h-full w-full border-1 p-0">
+                                        <span className="sr-only">Open menu</span>
+                                        {key.charAt(0).toUpperCase() + key.slice(1)}
+                                        <ChevronsUpDown/>
+                                    </Button>
+                                </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="center" className={'mt-2'}>
+                                <DropdownMenuItem
+                                    onClick={() => setSort(`${column.id}`)}>
+                                    <ArrowUp/> Asc
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => setSort(`-${column.id}`)}>
+                                    <ArrowDown/> Desc
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator/>
+                                <DropdownMenuItem disabled={makePermanent.includes(key)}
+                                                  onClick={() => column.toggleVisibility(false)}>
+                                    <EyeOff/> Hide
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+
+                        </DropdownMenu>
+                    </div>
+                ),
+                cell: ({row}: { row: any }) => {
+                    const value = row.getValue(key);
+                    if (key === "amount") {
+                        return new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(value);
+                    }
+
+                    if (key === "status") {
+                        let color: string;
+                        let icon: any;
+
+                        switch (value) {
+                            case "verified":
+                                color = "text-gray-400";
+                                icon = <CheckCircle className="size-4"/>;
+                                break;
+                            case "pending":
+                                color = "text-gray-400";
+                                icon = <Clock className="size-4"/>;
+                                break;
+                            case "deleted":
+                                color = "text-gray-400";
+                                icon = <XCircle className="size-4"/>;
+                                break;
+                            case "active":
+                                color = "text-gray-400";
+                                icon = <CheckCircle className="size-4"/>;
+                                break;
+                            case "processing":
+                                color = "text-gray-400";
+                                icon = <RefreshCw className="size-4"/>;
+                                break;
+                            case "inactive":
+                                color = "text-gray-400";
+                                icon = <CircleEqual className="size-4 rotate-90"/>;
+                                break;
+                            case "received":
+                                color = "text-gray-400";
+                                icon = <ArrowRightCircle className="size-4"/>;
+                                break;
+                            case "approved":
+                                color = "text-gray-400";
+                                icon = <CheckCircle className="size-4"/>;
+                                break;
+                            case "blocked":
+                                color = "text-gray-400";
+                                icon = <Ban className="size-4"/>;
+                                break;
+                            case "expired":
+                                color = "text-gray-400";
+                                icon = <TimerIcon className="size-4"/>;
+                                break;
+                            default:
+                                color = "text-gray-400";
+                                icon = <XCircle className="size-4"/>;
+                        }
+
+                        return <span className={`inline-flex items-center rounded px-2 py-0.5 font-medium gap-2`}>
+                            <span className={`${color}`}>{icon}</span>
+                            {value}
+                    </span>;
+                    }
+
+                    return value;
+                },
+            };
+        }).filter(Boolean);
+
+        const selectColumn: ColumnDef<Payment>[] = [
+            {
+                id: "select",
+                header: ({table}) => (
+                    <Checkbox
+                        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                        aria-label="Select all"
+                        className={'ml-3'}
+                    />
+                ),
+                cell: ({row}) => (
+                    <Checkbox
+                        checked={row.getIsSelected()}
+                        onCheckedChange={(value) => row.toggleSelected(!!value)}
+                        aria-label="Select row"
+                    />
+                ),
+                enableSorting: false,
+                enableHiding: false,
+            }
+        ];
+
+        const actionColumn: ColumnDef<Payment>[] = [
+            {
+                id: "actions",
+                enableHiding: false,
+                cell: ({row}) => {
+                    const payment = row.original;
+                    return (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(payment.id)}>
+                                    Copy payment ID
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator/>
+                                <DropdownMenuItem>View customer</DropdownMenuItem>
+                                <DropdownMenuItem>View payment details</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    );
+                },
+            },
+        ];
+
+        return [...selectColumn, ...columns, ...actionColumn];
     };
 
+    const fetchData = () => {
+        let values = {};
+
+        if (sort) {
+            // @ts-ignore
+            values.sort = sort;
+        }
+
+        if (search) {
+            // @ts-ignore
+            values.search = search;
+        }
+
+        if (pageIndex) {
+            // @ts-ignore
+            values.page = pageIndex + 1;
+        }
+
+        if (rowsPerPage !== 15) {
+            // @ts-ignore
+            values.perPage = rowsPerPage;
+        }
+
+        if (JSON.stringify(values) !== JSON.stringify(previousValues)) {
+            setPreviousValues(values);
+            router.get('/', values, {
+                preserveState: true,
+                replace: true
+            });
+        }
+    };
+
+
     const table = useReactTable({
-        data: dataUser,
-        columns: getColumns(data.data),
+        data: data.data,
+        // @ts-ignore
+        columns: generateColumns(data.data),
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
@@ -71,22 +279,21 @@ function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
         setPageIndex(0);
     };
 
+
     return (
         <>
             <div className="w-full">
                 <div className="flex items-center py-4">
                     <Input
                         placeholder="Search..."
-                        value={(table.getColumn("status")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) =>
-                            table.getColumn("status")?.setFilterValue(event.target.value)
-                        }
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
                         className="max-w-sm focus:border-0"
                     />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">
-                                 <Columns2 /> View
+                                <Columns2/> View
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -142,7 +349,7 @@ function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={getColumns(data.data).length} className="h-24 text-center">
+                                    <TableCell colSpan={generateColumns(data.data).length} className="h-24 text-center">
                                         No results.
                                     </TableCell>
                                 </TableRow>
@@ -161,7 +368,7 @@ function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
                             <div>
                                 <Select onValueChange={handleRowsPerPageChange}>
                                     <SelectTrigger className="w-[140px]">
-                                        <SelectValue placeholder={String(rowsPerPage)} />
+                                        <SelectValue placeholder={String(rowsPerPage)}/>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -182,7 +389,7 @@ function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
                                 onClick={() => setPageIndex(pageIndex - 1)}
                                 disabled={!table.getCanPreviousPage()}
                             >
-                                <ChevronsLeft />
+                                <ChevronsLeft/>
                             </Button>
                             <Button
                                 variant="outline"
@@ -190,7 +397,7 @@ function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
                                 onClick={() => setPageIndex(pageIndex - 1)}
                                 disabled={!table.getCanPreviousPage()}
                             >
-                                <ChevronLeft />
+                                <ChevronLeft/>
                             </Button>
                             <Button
                                 variant="outline"
@@ -198,7 +405,7 @@ function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
                                 onClick={() => setPageIndex(pageIndex + 1)}
                                 disabled={!table.getCanNextPage()}
                             >
-                                <ChevronRight />
+                                <ChevronRight/>
                             </Button>
                             <Button
                                 variant="outline"
@@ -206,7 +413,7 @@ function TableLayout({data, makePermanent}: { data: any, makePermanent: any }) {
                                 onClick={() => setPageIndex(pageIndex + 1)}
                                 disabled={!table.getCanNextPage()}
                             >
-                                <ChevronsRight />
+                                <ChevronsRight/>
                             </Button>
                         </div>
                     </div>
