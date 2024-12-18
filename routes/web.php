@@ -3,7 +3,6 @@
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -35,8 +34,6 @@ Route::get('/', function (Request $request) {
 
     $perPage = $request->input('perPage', 15);
     $page = $request->input('page', 1);
-
-    Log::info($query->toSql(), $query->getBindings());
 
     $users = $query->paginate($perPage)->withQueryString();
 

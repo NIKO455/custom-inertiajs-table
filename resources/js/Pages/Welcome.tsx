@@ -1,5 +1,4 @@
-import {Head, usePage} from "@inertiajs/react";
-import React from "react";
+import { Head, usePage } from "@inertiajs/react";
 import TableLayout from "@/Pages/Partials/TableLayout";
 
 export type Payment = {
@@ -10,24 +9,21 @@ export type Payment = {
     gmail: string | null;
 };
 
-export const makePermanent = [
-    'name',
-    'email',
-    'status',
-    'unique_id',
-]
+// :%s/<old_word>/<new_word> => this will replace all the matching word and this is not case sensitive
+// :%s/\C<old_word>/<new_word> => this will replace only the matching word and this is case sensitive
 
+export const makePermanent = ["name", "email", "status", "unique_id"];
 
 export default function Welcome() {
-    const {props} = usePage();
+    const { props } = usePage();
     const dataUser = props.users;
+
     return (
-        <div className={'max-w-7xl m-auto'}>
-            <Head title="Welcome"/>
+        <div className={"max-w-5xl m-auto"}>
+            <Head title="Welcome" />
             <div>
-                <TableLayout data={dataUser} makePermanent={makePermanent}/>
+                <TableLayout data={dataUser} makePermanent={makePermanent} />
             </div>
         </div>
     );
 }
-
