@@ -18,11 +18,23 @@ export default function Welcome() {
     const { props } = usePage();
     const dataUser = props.users;
 
+    const actionButtons = {
+        edit: true,
+        delete: true,
+        view: true,
+    }
+
+    const actionButtonLinks = {
+        edit: '/edit',
+        delete: '/delete',
+        view: '/view'
+    }
+
     return (
         <div className={"max-w-5xl m-auto"}>
             <Head title="Welcome" />
             <div>
-                <TableLayout data={dataUser} makePermanent={makePermanent} />
+                <TableLayout data={dataUser} makePermanent={makePermanent} actionButtons={actionButtons} actionButtonLinks={actionButtonLinks} tableName={'user'} />
             </div>
         </div>
     );

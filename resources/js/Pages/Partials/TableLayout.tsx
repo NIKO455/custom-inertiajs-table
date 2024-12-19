@@ -58,15 +58,21 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { router } from "@inertiajs/react";
+import { router, Link } from "@inertiajs/react";
 import { Payment } from "@/Pages/Welcome";
 
 function TableLayout({
     data,
     makePermanent,
+    actionButtons,
+    actionButtonLinks,
+    tableName,
 }: {
     data: any;
     makePermanent: any;
+    actionButtons: any;
+    tableName: any;
+    actionButtonLinks: any;
 }) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] =
@@ -235,7 +241,7 @@ function TableLayout({
                                 "indeterminate")
                         }
                         onCheckedChange={(value) =>
-                            table.toggleAllPageRowsSelected(!!value)
+                            table.toggleAllPageRowsSelected(value)
                         }
                         aria-label="Select all"
                         className={"ml-3"}
@@ -258,7 +264,7 @@ function TableLayout({
                 id: "actions",
                 enableHiding: false,
                 cell: ({ row }) => {
-                    const payment = row.original;
+                    const rowData = row.original;
                     return (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -272,19 +278,34 @@ function TableLayout({
                                 <DropdownMenuItem
                                     onClick={() =>
                                         navigator.clipboard.writeText(
-                                            payment.id,
+                                            rowData.id,
                                         )
                                     }
                                 >
-                                    Copy payment ID
+                                    Copy {tableName} ID
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>
-                                    View customer
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    View payment details
-                                </DropdownMenuItem>
+                                { actionButtons.delete &&
+                                    <Link href={actionButtonLinks.delete}>
+                                        <DropdownMenuItem>
+                                             Delete {tableName}
+                                         </DropdownMenuItem>
+                                    </Link>
+                                }
+                                { actionButtons.edit &&
+                                    <Link href={actionButtonLinks.edit}>
+                                        <DropdownMenuItem>
+                                            Edit {tableName}
+                                        </DropdownMenuItem>
+                                    </Link>
+                                }
+                                { actionButtons.view &&
+                                    <Link href={actionButtonLinks.view}>
+                                        <DropdownMenuItem>
+                                            View {tableName} details
+                                        </DropdownMenuItem>
+                                    </Link>
+                                }
                             </DropdownMenuContent>
                         </DropdownMenu>
                     );
@@ -299,22 +320,18 @@ function TableLayout({
         let values = {};
 
         if (sort) {
-            // @ts-ignore
             values.sort = sort;
         }
 
         if (search) {
-            // @ts-ignore
             values.search = search;
         }
 
         if (pageIndex) {
-            // @ts-ignore
             values.page = pageIndex + 1;
         }
 
         if (rowsPerPage !== 15) {
-            // @ts-ignore
             values.perPage = rowsPerPage;
         }
 
@@ -329,7 +346,6 @@ function TableLayout({
 
     const table = useReactTable({
         data: data.data,
-        // @ts-ignore
         columns: generateColumns(data.data),
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
